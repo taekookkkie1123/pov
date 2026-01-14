@@ -1,0 +1,316 @@
+<html>
+<head>
+<title>省份政策地图.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+省份政策地图.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">folium</span>
+<span class="s0">import </span><span class="s1">requests  </span><span class="s2"># 用于加载GeoJSON数据</span>
+<span class="s0">from </span><span class="s1">folium.features </span><span class="s0">import </span><span class="s1">GeoJsonTooltip</span>
+
+<span class="s2"># 1. 定义各省禁烟等级与政策数据</span>
+<span class="s1">smoking_control_data = {</span>
+    <span class="s2"># 4级（严格）</span>
+    <span class="s3">&quot;北京市&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">4</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;4级（严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;效果显著（未公开具体值）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《北京市控制吸烟条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2014年11月通过，2015年6月施行&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：室内公共场所/工作场所/公交全面禁烟；室外未成年活动场所、妇幼医院禁烟&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 处罚：个人50-200元，单位1-5万元&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 进展：2025年执法权回归区级卫健部门&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;上海市&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">4</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;4级（严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2025年成人吸烟率18.6%（大陆省级最低）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《上海市公共场所控制吸烟条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2009年通过，2017年修订&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：室内全面禁烟；2024年实施室外吸烟点标准，2025年明确室外8类场所控烟&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 目标：提前实现“健康中国2030”吸烟率目标&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;香港特别行政区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">4</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;4级（严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;吸烟率从 1982 年 23.3% 降至 2021 年 9.5%，为中国各地区最低水平；室内公共场所二手烟暴露率不足 5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《吸烟 (公众卫生) 条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：1982 年订立，多次修订&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心： 室内公共场所、工作场所、公共交通工具全面禁烟&lt;br&gt;，违法吸烟定额罚款：2025 年 12 月 31 日前为 1500 港元，2026 年起提高至 3000 港元&quot;</span>
+                  <span class="s3">&quot;• 最新：2026 年 1 月 1 日起，禁烟区扩大至指定处所出入口 3 米范围&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;澳门特别行政区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">4</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;4级（严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023 年 15 岁及以上人口烟草及相关产品使用率 11.6%，较法案生效前（16.9%）相对下降 31.4%，提前实现世界卫生组织 2025 年控烟目标&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《预防及控制吸烟制度》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2012 年实施，2022 年修订&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：除许可吸烟室外公共室内场所全面禁烟，公交站及出租车停靠站 10 米范围内吸烟属违法。违法吸烟者最高罚款1500澳门元，场所违规设立吸烟室最高罚款20万澳门元。2022年起全面禁止电子烟的制造、分销、销售等行为&quot;</span>
+                  <span class="s3">&quot;• 最新：2026 年 1 月 1 日起，禁烟区扩大至指定处所出入口 3 米范围&quot;</span>
+    <span class="s1">},</span>
+<span class="s2"># 3级（较严格）</span>
+    <span class="s3">&quot;天津市&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024年15岁及以上人群吸烟率22.5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《天津市控制吸烟条例&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2012年3月28日通过，现予公布，自2012年5月31日起施行。&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：将原有的公共场所禁烟扩大为公共场所和工作场所禁烟；处罚力度和范围进一步加大。&lt;br&gt;&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;浙江省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率20.8%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级通过《文明行为促进条例》纳入控烟条款&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：杭州、宁波等市出台专门控烟条例&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：室内公共场所全面禁烟；室内工作场所二手烟暴露率38.5%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;江苏省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率21.2%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级将控烟纳入《文明行为促进条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：南京、苏州等市有地方性控烟规定&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：强化学校、医院等重点场所控烟；医疗机构二手烟暴露率12.3%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;福建省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率20.5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《福建省爱国卫生条例》（1997年出台，2010年修订）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：厦门、福州等市出台市级控烟条例&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：公共场所/公交除指定地点外禁烟；景区二手烟暴露率32.7%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;山东省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率21.39%（较2020年降1.26%）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：拟将控烟条款纳入《山东省爱国卫生条例》修订（2022-2023年立法计划）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 创新：首创“控烟红黑榜”，联合惩戒连续上榜单位&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：青岛 2013 年出台《青岛市控制吸烟条例》、潍坊、威海 2023 年出台控制吸烟管理办&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;广东省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2019年广东省15岁以上成人吸烟率为26.48%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：2025年《广东省人民政府关于深入开展爱国卫生运动的实施意见》&quot;</span>
+                  <span class="s3">&quot;• 地方：2010《广州市控制吸烟条例》、2023《珠海经济特区公共场所控制吸烟条例》、1998《深圳经济特区控制吸烟条例》&quot;</span>
+                  <span class="s3">&quot;• 创新：2024年起，依托全运会，全面启动无烟健康湾区建设行动&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;广西省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">3</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;3级（较严格）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年 15 岁及以上人群吸烟率 25.7%，公共交通工具二手烟暴露率 19.8%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《广西壮族自治区爱国卫生条例》&quot;</span>
+                  <span class="s3">&quot;• 时间：2021 年 5 月 1 日起施行&quot;</span>
+                  <span class="s3">&quot;• 内容：室内公共场所、室内公共办公场所和公共交通工具内禁止吸烟（包括电子烟），明确室外特殊区域禁止吸烟范围，建立和完善戒烟服务体系，推行无烟机关建设&quot;</span>
+    <span class="s1">},</span>
+    <span class="s2"># 2级（一般）</span>
+    <span class="s3">&quot;河北省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率25.1%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级控烟条款纳入《爱国卫生条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：石家庄、唐山等市有地方性控烟要求&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：强化公共场所控烟劝导；家庭二手烟暴露率61.2%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;重庆市&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年餐饮场所二手烟暴露率 51.2%，15 岁及以上非吸烟者二手烟暴露率 48.7%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《重庆市公共场所控制吸烟条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2021 年正式出台&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：将控烟条款纳入文明行为促进条例；强化公共场所控烟劝导&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;四川省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023 年 15 岁及以上人群吸烟率 23.7%，公共场所二手烟暴露率 36.2%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《四川省公共场所卫生管理办法》，《四川省烟草专卖条例（修订草案）》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2011年出台；2025 年 11 月 24 日提请省第十四届人大常委会第二十二次会议二次审议&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：个人在禁止吸烟场所吸烟的，由有关部门责令改正，并处以50元以上200元以下罚款。&quot;</span>
+                  <span class="s3">&quot;• 最新：首次新增‘禁止或者限制在公共交通工具和公共场所吸烟’的控烟条款，将电子烟等新型烟草制品纳入监管范畴，强化对青少年群体的保护&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;河南省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024年15岁及以上吸烟率24.5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《河南省爱国卫生条例》（2020年6月修订施行）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 补充：2025年发布《烟草专卖管理条例》，2026年5月施行&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：城市市区室内公共场所/公交禁烟；餐饮场所二手烟暴露率56.7%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;黑龙江省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率28.5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《黑龙江省爱国卫生条例》（2018年4月修订）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：哈尔滨2012年出台《防止二手烟草烟雾危害条例》（国内“控烟立法第一城”）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：车站、医院等公共场所除专设地点外禁烟；工作场所二手烟暴露率52.1%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;内蒙古自治区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率28.3%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《内蒙古自治区爱国卫生条例》（2025年修订草案）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：幼儿园、中小学、医疗机构室内、电梯轿厢禁烟；推进无烟机关/医院建设&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 二手烟暴露率：工作场所二手烟暴露率54.6%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;吉林省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年 15 岁及以上人群吸烟率 27.3%，学校周边二手烟暴露率 18.5%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《吉林省城市公共场所禁止吸烟规定》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：1996 年 4 月 23 日发布，1996 年 5 月 31 日起施行（中国最早的省级控烟规定）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：县级以上人民政府所在地的城市九类场所禁止吸烟，由县级以上爱国卫生工作机构负责组织实施&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;湖南省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年餐饮场所二手烟暴露率 53.4%，公众对二手烟危害知晓率 76.8%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《湖南省爱国卫生条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方:12个市州在《文明行为促进条例》中将控烟专条设计，4个市州在《爱国卫生条例（办法）》中将控烟专条设计&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：规定五类公共场所禁止吸烟&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;宁夏回族自治区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">2</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;2级（一般）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年 15 岁及以上人群吸烟率 26.5%，戒烟门诊年接诊量 1200 余人次&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《宁夏回族自治区爱国卫生工作条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2022 年 11 月 4 日修订通过&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：规定七类公共场所禁止吸烟（含电子烟），机关、事业单位的室内区域禁止吸烟，违法吸烟个人处 50 元罚款，场所管理者处 1000-5000 元罚款&quot;</span>
+    <span class="s1">},</span>
+    <span class="s2"># 1级（薄弱）</span>
+    <span class="s3">&quot;新疆维吾尔自治区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2023年15岁及以上吸烟率29.1%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：《新疆维吾尔自治区爱国卫生工作条例》（2005年施行，2022年征求修订意见）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：室内公共场所/工作场所/未成年场所禁烟（含电子烟）&quot;</span>
+                  <span class="s3">&quot;• 问题：青少年二手烟暴露率42.7%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;湖北省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年 15 岁及以上人群吸烟率 22.7%，未成年人集中场所二手烟暴露率 8.9%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级依托文明行为促进条例规范控烟&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：重点保护未成年人免受二手烟危害&quot;</span>
+                  <span class="s3">&quot;• 地方：武汉等市有地方性控烟要求，多个城市（如襄阳、黄石、宜昌等）在文明行为促进条例中规定控烟内容&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;甘肃省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;兰州2023年男性吸烟率41.2%、女性1.8%&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级依托《爱国卫生条例》推进控烟&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：兰州2014年实施《公共场所控制吸烟条例》（2018年修正）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 问题：禁烟支持度全国最低（29.0%）&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;西藏自治区&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级依托《爱国卫生条例》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方：拉萨市规定公共场所/公交禁烟；日喀则市2023年规定学校、医院禁烟（含电子烟）&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 认知：公众对二手烟危害知晓率68.3%&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;云南省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年昆明市 15 岁及以上人群吸烟率 27.51%，二手烟暴露率 58.31%，农村吸烟率（28. 69%）高于城市（27.21%）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级《云南省爱国卫生条例（草案）》依托爱国卫生运动落实控烟要求&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 时间：2023年8月21日举行听证会&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 核心：草案规定室内公共场所、公共交通工具内控制吸烟&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;辽宁省&quot;</span><span class="s1">: {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;2024 年昆明市 15 岁及以上人群吸烟率 27.51%，二手烟暴露率 58.31%，农村吸烟率（28. 69%）高于城市（27.21%）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;• 政策：省级依托文明行为条例补充控烟条款&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 最新：《2025年辽宁省控烟干预工作实施方案》&lt;br&gt;&quot;</span>
+                  <span class="s3">&quot;• 地方： 大连、沈阳等市出台专门控烟法规（未达全面无烟要求）&quot;</span>
+    <span class="s1">},</span>
+    <span class="s3">&quot;青海省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托国家层面规定&quot;</span><span class="s1">},</span>
+    <span class="s3">&quot;海南省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托市级规定&quot;</span><span class="s1">},</span>
+    <span class="s3">&quot;安徽省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托爱国卫生运动&quot;</span><span class="s1">},</span>
+    <span class="s3">&quot;陕西省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托市级规定&quot;</span><span class="s1">},</span>
+    <span class="s3">&quot;江西省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托市级规定&quot;</span><span class="s1">},</span>
+    <span class="s3">&quot;贵州省&quot;</span><span class="s1">: {</span><span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;无省级专门控烟政策，依托市级规定&quot;</span><span class="s1">}</span>
+<span class="s1">}</span>
+
+<span class="s2"># 2. 定义等级配色与图例</span>
+<span class="s1">level_color = {</span><span class="s4">4</span><span class="s1">: </span><span class="s3">'#4B6043'</span><span class="s1">, </span><span class="s4">3</span><span class="s1">: </span><span class="s3">'#87AB69'</span><span class="s1">, </span><span class="s4">2</span><span class="s1">: </span><span class="s3">'#A3C585'</span><span class="s1">, </span><span class="s4">1</span><span class="s1">: </span><span class="s3">'#C7DDB5'</span><span class="s1">}</span>
+<span class="s1">legend_html = </span><span class="s3">''' 
+&lt;div style=&quot;position: fixed; bottom: 50px; left: 50px; z-index: 9999; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.2);&quot;&gt; 
+    &lt;b&gt;禁烟等级图例&lt;/b&gt;&lt;br&gt; 
+    &lt;span style=&quot;display: inline-block; width: 15px; height: 15px; background: #4B6043; margin-right: 5px;&quot;&gt;&lt;/span&gt;4级（严格）&lt;br&gt; 
+    &lt;span style=&quot;display: inline-block; width: 15px; height: 15px; background: #87AB69; margin-right: 5px;&quot;&gt;&lt;/span&gt;3级（较严格）&lt;br&gt; 
+    &lt;span style=&quot;display: inline-block; width: 15px; height: 15px; background: #A3C585; margin-right: 5px;&quot;&gt;&lt;/span&gt;2级（一般）&lt;br&gt; 
+    &lt;span style=&quot;display: inline-block; width: 15px; height: 15px; background: #C7DDB5; margin-right: 5px;&quot;&gt;&lt;/span&gt;1级（薄弱）&lt;br&gt; 
+    &lt;small&gt;注：鼠标悬浮查看详细政策&lt;/small&gt; 
+&lt;/div&gt; 
+'''</span>
+
+<span class="s2"># 3. 加载GeoJSON并合并政策数据</span>
+<span class="s1">geojson_url = </span><span class="s3">&quot;https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json&quot;</span>
+<span class="s1">response = requests.get(geojson_url)</span>
+<span class="s1">geojson_data = response.json()</span>
+
+<span class="s2"># 把政策数据写入GeoJSON的properties属性</span>
+<span class="s0">for </span><span class="s1">feature </span><span class="s0">in </span><span class="s1">geojson_data[</span><span class="s3">&quot;features&quot;</span><span class="s1">]:</span>
+    <span class="s1">province_name = feature[</span><span class="s3">&quot;properties&quot;</span><span class="s1">][</span><span class="s3">&quot;name&quot;</span><span class="s1">]</span>
+    <span class="s1">province_info = smoking_control_data.get(province_name, {</span>
+        <span class="s3">&quot;level&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;level_name&quot;</span><span class="s1">: </span><span class="s3">&quot;1级（薄弱）&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;smoking_rate&quot;</span><span class="s1">: </span><span class="s3">&quot;未公开&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;policy&quot;</span><span class="s1">: </span><span class="s3">&quot;暂无数据&quot;</span>
+    <span class="s1">})</span>
+    <span class="s1">feature[</span><span class="s3">&quot;properties&quot;</span><span class="s1">].update(province_info)</span>
+
+<span class="s2"># 4. 创建交互式地图</span>
+<span class="s1">m = folium.Map(</span>
+    <span class="s1">location=[</span><span class="s4">35</span><span class="s1">, </span><span class="s4">105</span><span class="s1">],  </span><span class="s2"># 中国地理中心</span>
+    <span class="s1">zoom_start=</span><span class="s4">4</span><span class="s1">,        </span><span class="s2"># 初始缩放级别</span>
+    <span class="s1">tiles=</span><span class="s3">'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&amp;size=1&amp;scale=1&amp;style=7&amp;x={x}&amp;y={y}&amp;z={z}'</span><span class="s1">,</span>
+    <span class="s1">attr=</span><span class="s3">'高德地图'       </span><span class="s2"># 中文底图版权</span>
+<span class="s1">)</span>
+
+<span class="s2"># 绘制省级区域</span>
+<span class="s1">folium.GeoJson(</span>
+    <span class="s1">geojson_data,</span>
+    <span class="s1">name=</span><span class="s3">&quot;中国各省禁烟政策&quot;</span><span class="s1">,</span>
+    <span class="s1">style_function=</span><span class="s0">lambda </span><span class="s1">feature: {</span>
+        <span class="s3">&quot;fillColor&quot;</span><span class="s1">: level_color[feature[</span><span class="s3">&quot;properties&quot;</span><span class="s1">][</span><span class="s3">&quot;level&quot;</span><span class="s1">]],</span>
+        <span class="s3">&quot;color&quot;</span><span class="s1">: </span><span class="s3">&quot;#ffffff&quot;</span><span class="s1">,</span>
+        <span class="s3">&quot;weight&quot;</span><span class="s1">: </span><span class="s4">1</span><span class="s1">,</span>
+        <span class="s3">&quot;fillOpacity&quot;</span><span class="s1">: </span><span class="s4">0.7</span>
+    <span class="s1">},</span>
+    <span class="s2"># 悬浮提示（读取GeoJSON的properties数据）</span>
+    <span class="s1">tooltip=GeoJsonTooltip(</span>
+        <span class="s1">fields=[</span><span class="s3">&quot;name&quot;</span><span class="s1">, </span><span class="s3">&quot;level_name&quot;</span><span class="s1">, </span><span class="s3">&quot;smoking_rate&quot;</span><span class="s1">, </span><span class="s3">&quot;policy&quot;</span><span class="s1">],</span>
+        <span class="s1">aliases=[</span><span class="s3">&quot;省份：&quot;</span><span class="s1">, </span><span class="s3">&quot;禁烟等级：&quot;</span><span class="s1">, </span><span class="s3">&quot;吸烟率：&quot;</span><span class="s1">, </span><span class="s3">&quot;政策详情：&quot;</span><span class="s1">],</span>
+        <span class="s1">max_width=</span><span class="s4">300</span><span class="s1">,</span>
+        <span class="s1">sticky=</span><span class="s0">True  </span><span class="s2"># 提示框跟随鼠标</span>
+    <span class="s1">)</span>
+<span class="s1">).add_to(m)</span>
+
+<span class="s2"># 添加图例</span>
+<span class="s1">m.get_root().html.add_child(folium.Element(legend_html))</span>
+<span class="s2"># 添加图层控制</span>
+<span class="s1">folium.LayerControl().add_to(m)</span>
+
+<span class="s2"># 5. 保存地图</span>
+<span class="s1">m.save(</span><span class="s3">&quot;中国各省禁烟政策可视化地图.html&quot;</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">&quot;地图已成功生成：中国各省禁烟政策可视化地图.html&quot;</span><span class="s1">)</span></pre>
+</body>
+</html>
