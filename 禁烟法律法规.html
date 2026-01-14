@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>禁烟相关法律法规</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", "宋体", Arial, sans-serif;
+        }
+        body {
+            background-color: #F4EAC5;
+            padding: 30px;
+            color: #4B6043;
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #F4EAC5;
+            padding: 30px;
+            border: 1px solid #A3C585;
+            border-radius: 5px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #A3C585;
+            padding-bottom: 10px;
+        }
+        .law-card {
+            background-color: #F4EAC5;
+            border: 1px solid #A3C585;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 12px 0;
+        }
+        .law-summary {
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #4B6043;
+            display: flex;
+            align-items: center;
+        }
+        .law-summary::before {
+            content: "▶";
+            margin-right: 12px;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        details[open] .law-summary::before {
+            content: "▼";
+        }
+        .law-content {
+            margin-top: 10px;
+            padding: 15px 10px;
+            background-color: #C7DDB5;
+            border: 2px solid #A3C585;
+            border-radius: 3px;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #6b7b65;
+            padding: 15px;
+            border: 1px solid #A3C585;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1 class="title">禁烟相关法律法规</h1>
+        
+        <details class="law-card">
+            <summary class="law-summary">《中华人民共和国烟草专卖法》</summary>
+            <div class="law-content">第五条第二款规定：“国家和社会加强吸烟危害健康的宣传教育，禁止或者限制在公共交通工具和公共场所吸烟，劝阻青少年吸烟，禁止中小学生吸烟。”</div>
+        </details>
+        
+        <details class="law-card">
+            <summary class="law-summary">《中华人民共和国未成年人保护法》</summary>
+            <div class="law-content">第五十九条第二款规定：“任何人不得在学校、幼儿园和其他未成年人集中活动的公共场所吸烟、饮酒。”</div>
+        </details>
+        
+        <details class="law-card">
+            <summary class="law-summary">《公共场所卫生管理条例实施细则》</summary>
+            <div class="law-content">第十八条明确：“室内公共场所禁止吸烟。公共场所经营者应当设置醒目的禁止吸烟警语和标志。室外公共场所设置的吸烟区不得位于行人必经的通道上。公共场所不得设置自动售烟机。公共场所经营者应当开展吸烟危害健康的宣传，并配备专（兼）职人员对吸烟者进行劝阻。”</div>
+        </details>
+        
+        <div class="footer">© 数据来源：国家法律法规数据库</div>
+    </div>
+</body>
+</html>
+    
